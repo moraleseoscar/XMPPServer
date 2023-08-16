@@ -1,5 +1,16 @@
 package org.example;
 
+import org.jivesoftware.smack.chat2.Chat;
+import org.jivesoftware.smack.chat2.ChatManager;
+import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.roster.packet.RosterPacket;
+import org.jivesoftware.smackx.muc.MultiUserChat;
+import org.jivesoftware.smackx.muc.MultiUserChatManager;
+import org.jivesoftware.smackx.xdata.Form;
+import org.jivesoftware.smackx.xdata.packet.DataForm;
+import org.jxmpp.jid.BareJid;
+import org.jxmpp.jid.EntityBareJid;
+import org.jxmpp.jid.impl.JidCreate;
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.SmackException;
@@ -7,12 +18,15 @@ import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.roster.*;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
-import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.jid.parts.Localpart;
+import org.jxmpp.jid.parts.Resourcepart;
 import org.jxmpp.stringprep.XmppStringprepException;
-import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smackx.iqregister.AccountManager;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class XMPPClient {
     //Datos predeterminados
@@ -25,10 +39,13 @@ public class XMPPClient {
     private String password;
     private AbstractXMPPConnection connection;
     private Roster roster;
-    private List<String[]> contacts;
+    private Map<String, List<String>> messageHistory;
+    private List<String> incomingSubscriptionRequests = new ArrayList<>();
+
 
     public XMPPClient() {
         connect();
+        messageHistory = new HashMap<>();
     }
 
     public boolean connect() {
@@ -45,19 +62,48 @@ public class XMPPClient {
             // Creamos la conexión
             connection = new XMPPTCPConnection(config);
             connection.connect();
-            System.out.println("Conexión exitosa al servidor XMPP.");
-            return true;
-            // Aquí puedes realizar otras operaciones con el servidor XMPP
 
+            // Manejo de las suscripciones entrantes
+            Roster roster = Roster.getInstanceFor(connection);
+            roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
+            roster.addSubscribeListener((from, subscribeRequest) -> {
+                incomingSubscriptionRequests.add(from.toString()); // Agrega la solicitud entrante a la lista
+                return null;
+            });
+
+            System.out.println("\nSuccessful connection to the XMPP server.\n");
+            return true;
         } catch (XmppStringprepException e) {
             e.printStackTrace();
-            System.err.println("Error al conectarse al servidor XMPP: " + e.getMessage());
+            System.err.println("Failed to establish connection to the XMPP server: " + e.getMessage());
             return false;
         } catch (SmackException | IOException | XMPPException | InterruptedException ex) {
             ex.printStackTrace();
-            System.err.println("Error al conectarse al servidor XMPP: " + ex.getMessage());
+            System.err.println("Failed to establish connection to the XMPP server: " + ex.getMessage());
             return false;
         }
+    }
+
+    public boolean createAccount(String newUsername, String newPassword) {
+        if (connection != null && connection.isConnected() && connection.isAuthenticated()) {
+            AccountManager accountManager = AccountManager.getInstance(connection);
+            try {
+                accountManager.sensitiveOperationOverInsecureConnection(true);
+                accountManager.createAccount(Localpart.from(newUsername), newPassword);
+                return true;
+            } catch (SmackException.NoResponseException | XMPPException.XMPPErrorException |
+                     SmackException.NotConnectedException | InterruptedException ex) {
+                ex.printStackTrace();
+                System.err.println("Error encountered while creating the account: " + ex.getMessage());
+            } catch (XmppStringprepException e) {
+                throw new RuntimeException(e);
+            }
+        }else{
+            System.out.print(connection != null);
+            System.out.print(connection.isConnected());
+            System.out.print(connection.isAuthenticated());
+        }
+        return false;
     }
 
     public boolean login(String username, String password) {
@@ -65,11 +111,10 @@ public class XMPPClient {
             connection.login(username, password);
             this.username = username;
             this.password = password;
-            System.out.println("Bien logueado.");
             return true;
         }catch (SmackException | IOException | XMPPException | InterruptedException ex) {
             ex.printStackTrace();
-            System.err.println("Error al conectarse al servidor XMPP: " + ex.getMessage());
+            System.err.println("Failed to establish connection to the XMPP server: " + ex.getMessage());
             return false;
         }
     }
@@ -85,7 +130,7 @@ public class XMPPClient {
 
         if (connection != null && connection.isConnected()) {
             roster = Roster.getInstanceFor(connection);
-            roster.setSubscriptionMode(Roster.SubscriptionMode.accept_all); // Opcional: aceptar automáticamente solicitudes de suscripción
+            roster.setSubscriptionMode(Roster.SubscriptionMode.manual);
 
             for (RosterEntry entry : roster.getEntries()) {
                 contactList.add(entry.getJid().toString());
@@ -103,26 +148,58 @@ public class XMPPClient {
                 return true;
             } catch (SmackException | InterruptedException | IOException | XMPPException.XMPPErrorException ex) {
                 ex.printStackTrace();
-                System.err.println("Error al agregar contacto: " + ex.getMessage());
+                System.err.println("Error while adding contact: " + ex.getMessage());
             }
         }
         return false;
     }
 
-    public boolean acceptContactRequest(String contactJID) {
+    public boolean sendMessage(String contactJID, String messageBody) {
         if (connection != null && connection.isConnected()) {
             try {
-                Roster roster = Roster.getInstanceFor(connection);
-                Presence subscribed = new Presence(Presence.Type.subscribed);
-                subscribed.setTo(JidCreate.bareFrom(contactJID));
-                connection.sendStanza(subscribed);
+                EntityBareJid jid = JidCreate.entityBareFrom(contactJID);
+                ChatManager chatManager = ChatManager.getInstanceFor(connection);
+                Chat chat = chatManager.chatWith(jid);
+
+                chat.send(messageBody);
+
                 return true;
-            } catch (SmackException | InterruptedException | IOException ex) {
+            } catch (Exception ex) {
                 ex.printStackTrace();
-                System.err.println("Error al aceptar solicitud de contacto: " + ex.getMessage());
+                System.err.println("Error encountered while sending message: " + ex.getMessage());
+            }
+        }
+        return false;
+    }
+
+    public List<String> getSubscriptionRequests() {
+        return incomingSubscriptionRequests;
+    }
+
+    public boolean acceptAllRequests(){
+        if (connection != null && connection.isConnected()) {
+            try {
+                for (String jid : incomingSubscriptionRequests) {
+                    Roster roster = Roster.getInstanceFor(connection);
+                    Presence subscribed = new Presence(Presence.Type.subscribed);
+                    subscribed.setTo(JidCreate.bareFrom(jid));
+                    connection.sendStanza(subscribed);
+                    return true;
+                }
+            }catch (SmackException | InterruptedException | IOException ex) {
+                ex.printStackTrace();
+                System.err.println("Error while accepting requests: " + ex.getMessage());
             }
         }
         return false;
     }
 
 }
+
+//            roster.addSubscribeListener((from, subscribeRequest) -> {
+////                System.out.println("");
+////                System.out.println("Incoming subscription request from: " + from);
+//                    incomingSubscriptionRequests.add(from.toString()); // Agrega la solicitud entrante a la lista
+//                    //return SubscribeListener.SubscribeAnswer.Approve; // Aprobamos automáticamente las solicitudes entrantes
+//                    return null;
+//                    });
