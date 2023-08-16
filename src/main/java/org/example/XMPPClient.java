@@ -22,6 +22,8 @@ import org.jxmpp.jid.parts.Localpart;
 import org.jxmpp.jid.parts.Resourcepart;
 import org.jxmpp.stringprep.XmppStringprepException;
 import org.jivesoftware.smackx.iqregister.AccountManager;
+
+import java.awt.desktop.SystemSleepEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,13 +41,16 @@ public class XMPPClient {
     private String password;
     private AbstractXMPPConnection connection;
     private Roster roster;
-    private Map<String, List<String>> messageHistory;
     private List<String> incomingSubscriptionRequests = new ArrayList<>();
+    private Map<String, List<String>> messageHistory;
 
-
-    public XMPPClient() {
+    public XMPPClient(Map<String, List<String>> messageHistory) {
         connect();
-        messageHistory = new HashMap<>();
+        this.messageHistory = messageHistory;
+    }
+
+    public Map<String, List<String>> getMessageHistory(){
+        return this.messageHistory;
     }
 
     public boolean connect() {
@@ -154,6 +159,7 @@ public class XMPPClient {
         return false;
     }
 
+    //==================================================================================MENSAJES=====================================================
     public boolean sendMessage(String contactJID, String messageBody) {
         if (connection != null && connection.isConnected()) {
             try {
@@ -162,6 +168,10 @@ public class XMPPClient {
                 Chat chat = chatManager.chatWith(jid);
 
                 chat.send(messageBody);
+
+                String key = getChatKey(username, contactJID.replace("@alumchat.xyz", "")); // Obtener la clave del chat
+                String formattedMessage = username + ": " + messageBody;
+                addMessageToChatHistory(key, formattedMessage);
 
                 return true;
             } catch (Exception ex) {
@@ -172,6 +182,27 @@ public class XMPPClient {
         return false;
     }
 
+
+    private String getChatKey(String user1, String user2) {
+        if (user1.compareTo(user2) < 0) {
+            return user1 + " " + user2;
+        } else {
+            return user2 + " " + user1;
+        }
+    }
+
+    public void addMessageToChatHistory(String key, String message) {
+        List<String> chatHistory = messageHistory.getOrDefault(key, new ArrayList<>());
+        chatHistory.add(message);
+        messageHistory.put(key, chatHistory);
+    }
+
+    public List<String> getChatHistory(String contactJID) {
+        String key = getChatKey(username, contactJID.replace("@alumchat.xyz", ""));
+        return messageHistory.getOrDefault(key, new ArrayList<>());
+    }
+
+    //==================================================================================SUSCRIPCIONES=====================================================
     public List<String> getSubscriptionRequests() {
         return incomingSubscriptionRequests;
     }
@@ -195,11 +226,3 @@ public class XMPPClient {
     }
 
 }
-
-//            roster.addSubscribeListener((from, subscribeRequest) -> {
-////                System.out.println("");
-////                System.out.println("Incoming subscription request from: " + from);
-//                    incomingSubscriptionRequests.add(from.toString()); // Agrega la solicitud entrante a la lista
-//                    //return SubscribeListener.SubscribeAnswer.Approve; // Aprobamos automáticamente las solicitudes entrantes
-//                    return null;
-//                    });

@@ -1,15 +1,16 @@
 package org.example;
 
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class XMPPMain {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         int choice;
         int lgchoice;
+        Map<String, List<String>> messageHistory = new HashMap<>();
+
         do {
-            XMPPClient xmppClient = new XMPPClient();
+            XMPPClient xmppClient = new XMPPClient(messageHistory);
             System.out.println("MENU");
             System.out.println("1. Login");
             System.out.println("2. Register new user");
@@ -25,11 +26,12 @@ public class XMPPMain {
                     String password = scanner.nextLine();
                     if (xmppClient.login(username, password)){
                         System.out.println("\nLogged in successfully!");
+                        List<String> contacts = new ArrayList<>();
                         do {
                             System.out.println("\nMAIN MENU\n-------------------------------------------");
                             System.out.println("1.  Show contacts");
                             System.out.println("2.  Add contact");
-                            System.out.println("3.  Show user details");
+                            System.out.println("3.  Accept friend requests");
                             System.out.println("4.  Direct messages");
                             System.out.println("5.  Group messages");
                             System.out.println("6.  Send notification");
@@ -41,7 +43,7 @@ public class XMPPMain {
                             scanner.nextLine();
                             switch (lgchoice) {
                                 case 1:
-                                    List<String> contacts = xmppClient.getContacts();
+                                    contacts = xmppClient.getContacts();
                                     if (contacts.isEmpty()) {
                                         System.out.println("You don't have any contacts in your list.");
                                     } else {
@@ -89,29 +91,37 @@ public class XMPPMain {
 
                                     break;
                                 case 4:
-                                    List<String> listContacts = xmppClient.getContacts();
+                                    contacts = xmppClient.getContacts();
 
-                                    if (listContacts.isEmpty()) {
+                                    if (contacts.isEmpty()) {
                                         System.out.println("You don't have any contacts in your list.");
                                     } else {
                                         System.out.println("\n===================================================");
                                         System.out.println("List of contacts:");
-                                        for (int i = 0; i < listContacts.size(); i++) {
-                                            System.out.println((i + 1) + ". " + listContacts.get(i));
+                                        for (int i = 0; i < contacts.size(); i++) {
+                                            System.out.println((i + 1) + ". " + contacts.get(i));
                                         }
                                         System.out.println("===================================================\n");
-                                        System.out.print("Select the contact's number to whom you want to send a message: ");
+                                        System.out.print("Select the contact's number to whom you want to see the chat: ");
                                         int selectedContactIndex = scanner.nextInt();
                                         scanner.nextLine();
-                                        System.out.print("Write the message you want to send: ");
-                                        String message = scanner.nextLine();
-                                        if (selectedContactIndex >= 1 && selectedContactIndex <= listContacts.size()) {
-                                            String selectedContactJID = listContacts.get(selectedContactIndex - 1);
-                                            boolean messageSent = xmppClient.sendMessage(selectedContactJID, message);
-                                            if (messageSent) {
-                                                System.out.println("Message sent successfully.");
-                                            } else {
-                                                System.out.println("Error while sending the message.");
+                                        if (selectedContactIndex >= 1 && selectedContactIndex <= contacts.size()) {
+                                            String selectedContact = contacts.get(selectedContactIndex - 1);
+                                            List<String> chatHistory = xmppClient.getChatHistory(selectedContact);
+
+                                            System.out.println("\nChat with " + selectedContact + ":");
+                                            for (String me : chatHistory) {
+                                                System.out.println(me);
+                                            }
+
+                                            System.out.print("\nDo you want to send a message to " + selectedContact + "? (1 for Yes, 0 for No): ");
+                                            int sendMessageChoice = scanner.nextInt();
+                                            scanner.nextLine(); // Consumir la nueva línea pendiente
+                                            if (sendMessageChoice == 1) {
+                                                System.out.print("Mensage: ");
+                                                String chatMessage = scanner.nextLine();
+                                                xmppClient.sendMessage(selectedContact, chatMessage);
+                                                System.out.println("Message sent ✓");
                                             }
                                         } else {
                                             System.out.println("Invalid option.");
@@ -122,24 +132,42 @@ public class XMPPMain {
                                     boolean running = true;
 
                                     while (running) {
-                                        System.out.println("\n1. List of contacts");
-                                        System.out.println("2. Chats");
-                                        System.out.println("3. Send Messages");
-                                        System.out.println("4. Exit");
+                                        System.out.println("\n1. Chats");
+                                        System.out.println("2. Send Messages");
+                                        System.out.println("3. Exit");
                                         System.out.print("Select an option: ");
                                         int choiceContacts = scanner.nextInt();
 
                                         switch (choiceContacts) {
                                             case 1:
-                                                List<String> testContacts = xmppClient.getContacts();
-                                                System.out.println("\nContacts:");
-                                                for (String contact : testContacts) {
-                                                    System.out.println(contact);
+                                                contacts = xmppClient.getContacts();
+
+                                                if (contacts.isEmpty()) {
+                                                    System.out.println("You don't have any contacts in your list.");
+                                                } else {
+                                                    System.out.println("\n===================================================");
+                                                    System.out.println("List of contacts:");
+                                                    for (int i = 0; i < contacts.size(); i++) {
+                                                        System.out.println((i + 1) + ". " + contacts.get(i));
+                                                    }
+                                                    System.out.println("===================================================\n");
+                                                    System.out.print("Select the contact's number to whom you want to see the history: ");
+                                                    int selectedContactIndex = scanner.nextInt();
+                                                    scanner.nextLine();
+                                                    if (selectedContactIndex >= 1 && selectedContactIndex <= contacts.size()) {
+                                                        String selectedContact = contacts.get(selectedContactIndex - 1);
+                                                        List<String> chatHistory = xmppClient.getChatHistory(selectedContact);
+
+                                                        System.out.println("\nChat history with " + selectedContact + ":");
+                                                        for (String me : chatHistory) {
+                                                            System.out.println(me);
+                                                        }
+                                                    } else {
+                                                        System.out.println("Invalid option.");
+                                                    }
                                                 }
                                                 break;
                                             case 2:
-                                                break;
-                                            case 3:
                                                 scanner.nextLine(); // Consume la nueva línea pendiente
                                                 System.out.print("Ingresa el JID del contacto: ");
                                                 String recipientJID = scanner.nextLine();
@@ -148,7 +176,7 @@ public class XMPPMain {
                                                 xmppClient.sendMessage(recipientJID, chatMessage);
                                                 System.out.println("Mensaje enviado.");
                                                 break;
-                                            case 4:
+                                            case 3:
                                                 running = false;
                                                 break;
                                             default:
@@ -157,6 +185,7 @@ public class XMPPMain {
                                         }
                                     }
                                 case 10:
+                                    messageHistory = xmppClient.getMessageHistory();
                                     xmppClient.disconnect();
                                     break;
                                 default:
