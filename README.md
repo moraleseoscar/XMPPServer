@@ -1,23 +1,33 @@
 # XMPPClient - Multi-Functional XMPP Chat Client
 
-XMPPClient is a versatile Java-based chat client that utilizes the Extensible Messaging and Presence Protocol (XMPP) for communication. This project provides a comprehensive implementation of a client with features such as connecting to an XMPP server, managing contacts, sending/receiving messages, presence status, group chat, and file sharing.
+XMPPClient is a versatile Java-based chat client that utilizes the Extensible Messaging and Presence Protocol (XMPP) for communication. This project provides a comprehensive implementation of a client with features such as connecting to an XMPP server, managing contacts, sending/receiving messages, presence status, group chat, and file sharing. The core library used for XMPP communication is **Smack** version 4.2.0.
 
 ## Features
 
-- **Connection Management**: Establish a connection to an XMPP server with configurable server details.
-- **Login and Account Creation**: Log in with existing credentials or create a new account.
-- **Contact Management**: View and manage contacts with their presence status.
-- **Presence Status**: Set custom presence statuses, including availability, away, do not disturb, etc.
-- **One-on-One Chat**: Send and receive text messages to/from contacts.
-- **Group Chat**: Create group chats, invite users, and send messages within the group.
-- **File Sharing**: Send and receive files during chats.
-- **Message History**: Store and retrieve chat message history.
-- **Notifications**: Receive notifications about friend connections and updates.
-- **Subscription Management**: Accept incoming subscription requests.
+- `Connection Management`: Establish a connection to an XMPP server with configurable server details.
+
+- `Login and Account Creation`: Log in with existing credentials or create a new account.
+ 
+- `Contact Management`: View and manage contacts with their presence status.
+ 
+- `Presence Status`: Set custom presence statuses, including availability, away, do not disturb, etc.
+ 
+- `One-on-One Chat`: Send and receive text messages to/from contacts.
+ 
+- `Group Chat`: Create group chats, invite users, and send messages within the group.
+ 
+- `File Sharing`: Send and receive files during chats.
+ 
+- `Message History`: Store and retrieve chat message history.
+ 
+- `Notifications`: Receive notifications about friend connections and updates.
+
+- `Subscription Management`: Accept incoming subscription requests.
 
 ## Dependencies
 
-This project implements an XMPP client with various features for communication. It provides functionalities such as connecting to the server, managing contacts, sending and receiving messages, presence status management, and group chat capabilities. The core library used for XMPP communication is **Smack** version 4.2.0.
+This project implements an XMPP client with various features for communication. It provides functionalities such as connecting to the server, managing contacts, sending and receiving messages, presence status management, and group chat capabilities. 
+
 - smack-tcp (TCP connection)
 - smack-extensions (Smack extensions)
 - smack-im (Instant Messaging)
@@ -51,7 +61,7 @@ mvn compile exec:java
 If you encounter any issues while building or running the application, refer to the smack's documentation [Smack](https://github.com/igniterealtime/Smack).
 
 ## Contributing
-Contributions are welcome! Feel free to submit issues or pull requests to help improve this XMPP client project.
+Contributions are welcome! Feel free to submit issues or pull requests to help improve this XMPP client project. For more information, feel free to explore the code files or contact me.
 
 ## License
 
