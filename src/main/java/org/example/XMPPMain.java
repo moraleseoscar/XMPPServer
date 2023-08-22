@@ -1,11 +1,33 @@
+/**
+ * Nombre del Archivo: XMPPMain.java
+ * Descripción: Este archivo contiene la clase principal que actúa como punto de entrada para la aplicación de chat XMPP.
+ * Autor: Oscar Estrada
+ * Fecha: 22/08/2023
+ * Versión: 1.0
+ *
+ * Notas:
+ * - Esta aplicación utiliza la biblioteca Smack para la comunicación XMPP.
+ * - Asegúrese de que las credenciales de inicio de sesión y la configuración del servidor sean correctas.
+ */
+
 package org.example;
 
 import org.jivesoftware.smack.packet.Presence;
-import java.io.IOException;
+import org.jxmpp.stringprep.XmppStringprepException;
 import java.util.*;
 
+/**
+ * This class represents the main entry point of the XMPP chat application.
+ */
 public class XMPPMain {
-    public static void main(String[] args) {
+
+    /**
+     * The main method that starts the XMPP chat application.
+     *
+     * @param args The command-line arguments (not used in this application).
+     * @throws XmppStringprepException If there's an error with XMPP string preparation.
+     */
+    public static void main(String[] args) throws XmppStringprepException {
         Scanner scanner = new Scanner(System.in);
         int choice;
         int lgchoice;
@@ -34,14 +56,15 @@ public class XMPPMain {
                         do {
                             System.out.println("\nMAIN MENU\n-------------------------------------------");
                             System.out.println("1.  Show contacts");
-                            System.out.println("2.  Add contact");
-                            System.out.println("3.  Accept friend requests");
-                            System.out.println("4.  Switch Presence Mode");
-                            System.out.println("5.  Direct messages");
-                            System.out.println("6.  Send Files");
-                            System.out.println("7.  Group messages");
-                            System.out.println("8.  Delete account");
-                            System.out.println("9. Log out");
+                            System.out.println("2.  View user information");
+                            System.out.println("3.  Add contact");
+                            System.out.println("4.  Accept friend requests");
+                            System.out.println("5.  Switch Presence Mode");
+                            System.out.println("6.  Direct messages");
+                            System.out.println("7.  Send Files");
+                            System.out.println("8.  Group messages");
+                            System.out.println("9.  Delete account");
+                            System.out.println("10. Log out");
                             System.out.print("Select an option: ");
                             lgchoice = scanner.nextInt();
                             scanner.nextLine();
@@ -60,6 +83,13 @@ public class XMPPMain {
                                     }
                                     break;
                                 case 2:
+                                    System.out.print("Enter the userJID (contact@domain): ");
+                                    String targetUser = scanner.nextLine();
+                                    String userStatus = xmppClient.getUserStatus(targetUser);
+                                    System.out.println("\n==============================================");
+                                    System.out.println(userStatus);
+                                    break;
+                                case 3:
                                     System.out.print("\nContact email (example@alumchat.xyz): ");
                                     String addEmail = scanner.nextLine();
                                     System.out.print("Nickname: ");
@@ -71,7 +101,7 @@ public class XMPPMain {
                                         System.out.println("Contact could not be added.");
                                     }
                                     break;
-                                case 3:
+                                case 4:
                                     List<String> subscriptionRequests = xmppClient.getSubscriptionRequests();
                                     if (subscriptionRequests.isEmpty()) {
                                         System.out.println("\nYou don't have any requests.");
@@ -94,7 +124,7 @@ public class XMPPMain {
                                     }
 
                                     break;
-                                case 4:
+                                case 5:
                                     System.out.println("\nSelect presence mode:");
                                     System.out.println("_________________________________");
                                     System.out.println("1. Available");
@@ -144,7 +174,7 @@ public class XMPPMain {
                                         }
                                     }
                                     break;
-                                case 5:
+                                case 6:
                                     contacts = xmppClient.getContacts();
 
                                     if (contacts.isEmpty()) {
@@ -170,7 +200,7 @@ public class XMPPMain {
 
                                             System.out.print("\nDo you want to send a message to " + selectedContact + "? (1 for Yes, 0 for No): ");
                                             int sendMessageChoice = scanner.nextInt();
-                                            scanner.nextLine(); // Consumir la nueva línea pendiente
+                                            scanner.nextLine();
                                             if (sendMessageChoice == 1) {
                                                 System.out.print("Message: ");
                                                 String chatMessage = scanner.nextLine();
@@ -182,9 +212,8 @@ public class XMPPMain {
                                         }
                                     }
                                     break;
-                                case 6:
+                                case 7:
                                     contacts = xmppClient.getContacts();
-                                    // Send a file
                                     if (contacts.isEmpty()) {
                                         System.out.println("You don't have any contacts in your list.");
                                     } else {
@@ -209,11 +238,51 @@ public class XMPPMain {
                                         }
                                     }
                                     break;
-                                case 7:
-
-                                    System.out.println("Group chat");
-                                    break;
                                 case 8:
+                                    System.out.println("\n1. Invitar a usuario a sala de chat grupal");
+                                    System.out.println("2. Crear sala de chat grupal");
+                                    System.out.println("3. Unirse a una sala de chat grupal");
+                                    System.out.println("4. Enviar mensaje a sala de chat grupal");
+                                    System.out.println("5. Salir");
+
+                                    System.out.print("Seleccione una opción: ");
+                                    int option = scanner.nextInt();
+                                    scanner.nextLine();
+
+                                    switch (option) {
+                                        case 1:
+                                            System.out.print("Nombre de la sala: ");
+                                            String roomName = scanner.nextLine();
+                                            System.out.print("JID del usuario a invitar: ");
+                                            String userJID = scanner.nextLine();
+                                            xmppClient.inviteUserToGroupChat(roomName, userJID);
+                                            break;
+
+                                        case 2:
+                                            System.out.print("Nombre de la sala: ");
+                                            String newRoomName = scanner.nextLine();
+                                            xmppClient.createGroupChatAndInvite(newRoomName);
+                                            xmppClient.registerGroupMessageListener(newRoomName);
+                                            break;
+                                        case 3:
+                                            xmppClient.acceptInvitationAndJoinGroupChat("Prueba4");
+                                            xmppClient.registerGroupMessageListener("Prueba4");
+                                            break;
+                                        case 4:
+                                            System.out.print("Nombre de la sala a la que enviar el mensaje: ");
+                                            String targetRoom = scanner.nextLine();
+                                            System.out.print("Mensaje a enviar: ");
+                                            String message = scanner.nextLine();
+                                            xmppClient.sendMessageToGroupChat(targetRoom, message);
+                                            break;
+                                        case 5:
+                                            xmppClient.disconnect();
+                                            System.exit(0);
+                                        default:
+                                            System.out.println("Opción inválida. Intente de nuevo.");
+                                    }
+                                    break;
+                                case 9:
                                     System.out.println("Are you sure you want to delete your account?");
                                     System.out.println("Press 1 to confirm or 0 to cancel:");
                                     int confirmDelete = scanner.nextInt();
@@ -231,10 +300,11 @@ public class XMPPMain {
                                         System.out.println("Account deletion cancelled.");
                                     }
                                     break;
-                                case 9:
+                                case 10:
                                     messageHistory = xmppClient.getMessageHistory();
                                     xmppClient.disconnect();
                                     break;
+
                                 default:
                                     System.out.println("Invalid option.");
                             }
@@ -243,7 +313,7 @@ public class XMPPMain {
                     break;
                 case 2:
                     xmppClient.login("estrada20565", "admin");
-                    scanner.nextLine(); // Consume the newline character
+                    scanner.nextLine(); 
                     System.out.print("\nNew Username: ");
                     String newUsername = scanner.nextLine();
                     System.out.print("New Password: ");
