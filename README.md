@@ -1,6 +1,6 @@
 # XMPPClient - Multi-Functional XMPP Chat Client
 
-XMPPClient is a versatile Java-based chat client that utilizes the Extensible Messaging and Presence Protocol (XMPP) for communication. This project provides a comprehensive implementation of a client with features such as connecting to an XMPP server, managing contacts, sending/receiving messages, presence status, group chat, and file sharing.
+XMPPClient is a versatile Java-based chat client that utilizes the Extensible Messaging and Presence Protocol (XMPP) for communication. This project provides a comprehensive implementation of a client with features such as connecting to an XMPP server, managing contacts, sending/receiving messages, presence status, group chat, and file sharing. The core library used for XMPP communication is **Smack** version 4.2.0.
 
 ## Features
 
@@ -26,7 +26,8 @@ XMPPClient is a versatile Java-based chat client that utilizes the Extensible Me
 
 ## Dependencies
 
-This project implements an XMPP client with various features for communication. It provides functionalities such as connecting to the server, managing contacts, sending and receiving messages, presence status management, and group chat capabilities. The core library used for XMPP communication is **Smack** version 4.2.0.
+This project implements an XMPP client with various features for communication. It provides functionalities such as connecting to the server, managing contacts, sending and receiving messages, presence status management, and group chat capabilities. 
+
 - smack-tcp (TCP connection)
 - smack-extensions (Smack extensions)
 - smack-im (Instant Messaging)
