@@ -1,5 +1,7 @@
 package org.example;
 
+import org.jivesoftware.smack.packet.Presence;
+import java.io.IOException;
 import java.util.*;
 
 public class XMPPMain {
@@ -8,6 +10,7 @@ public class XMPPMain {
         int choice;
         int lgchoice;
         Map<String, List<String>> messageHistory = new HashMap<>();
+
 
         do {
             XMPPClient xmppClient = new XMPPClient(messageHistory);
@@ -26,30 +29,31 @@ public class XMPPMain {
                     String password = scanner.nextLine();
                     if (xmppClient.login(username, password)){
                         System.out.println("\nLogged in successfully!");
-                        List<String> contacts = new ArrayList<>();
+                        xmppClient.sendConnectionNotificationToFriends();
+                        List<String> contacts;
                         do {
                             System.out.println("\nMAIN MENU\n-------------------------------------------");
                             System.out.println("1.  Show contacts");
                             System.out.println("2.  Add contact");
                             System.out.println("3.  Accept friend requests");
-                            System.out.println("4.  Direct messages");
-                            System.out.println("5.  Group messages");
-                            System.out.println("6.  Send notification");
-                            System.out.println("7.  Set presence message");
-                            System.out.println("9.  Delete account");
-                            System.out.println("10. Log out");
+                            System.out.println("4.  Switch Presence Mode");
+                            System.out.println("5.  Direct messages");
+                            System.out.println("6.  Send Files");
+                            System.out.println("7.  Group messages");
+                            System.out.println("8.  Delete account");
+                            System.out.println("9. Log out");
                             System.out.print("Select an option: ");
                             lgchoice = scanner.nextInt();
                             scanner.nextLine();
                             switch (lgchoice) {
                                 case 1:
-                                    contacts = xmppClient.getContacts();
-                                    if (contacts.isEmpty()) {
+                                    List<String> mainContacts = xmppClient.getContactsWithStatus();
+                                    if (mainContacts.isEmpty()) {
                                         System.out.println("You don't have any contacts in your list.");
                                     } else {
                                         System.out.println("\n=================================");
                                         System.out.println("List of contacts:");
-                                        for (String contact : contacts) {
+                                        for (String contact : mainContacts) {
                                             System.out.println(contact);
                                         }
                                         System.out.println("=================================");
@@ -91,6 +95,56 @@ public class XMPPMain {
 
                                     break;
                                 case 4:
+                                    System.out.println("\nSelect presence mode:");
+                                    System.out.println("_________________________________");
+                                    System.out.println("1. Available");
+                                    System.out.println("2. Chat");
+                                    System.out.println("3. Away");
+                                    System.out.println("4. Extended Away");
+                                    System.out.println("5. Do Not Disturb");
+                                    System.out.println("0. Cancel");
+                                    System.out.print("Enter your choice: ");
+                                    int presenceModeChoice = scanner.nextInt();
+                                    scanner.nextLine();
+
+                                    Presence.Mode selectedPresenceMode = null;
+                                    String statusMessage = null;
+
+                                    switch (presenceModeChoice) {
+                                        case 1:
+                                            selectedPresenceMode = Presence.Mode.available;
+                                            break;
+                                        case 2:
+                                            selectedPresenceMode = Presence.Mode.chat;
+                                            break;
+                                        case 3:
+                                            selectedPresenceMode = Presence.Mode.away;
+                                            break;
+                                        case 4:
+                                            selectedPresenceMode = Presence.Mode.xa;
+                                            break;
+                                        case 5:
+                                            selectedPresenceMode = Presence.Mode.dnd;
+                                            break;
+                                        case 0:
+                                            System.out.println("Operation cancelled.");
+                                            break;
+                                        default:
+                                            System.out.println("Invalid choice.");
+                                    }
+
+                                    if (selectedPresenceMode != null) {
+                                        System.out.print("Enter status message (optional): ");
+                                        statusMessage = scanner.nextLine();
+
+                                        if (xmppClient.setPresenceMode(selectedPresenceMode, statusMessage)) {
+                                            System.out.println("Presence mode updated successfully.");
+                                        } else {
+                                            System.out.println("Failed to update presence mode.");
+                                        }
+                                    }
+                                    break;
+                                case 5:
                                     contacts = xmppClient.getContacts();
 
                                     if (contacts.isEmpty()) {
@@ -118,9 +172,9 @@ public class XMPPMain {
                                             int sendMessageChoice = scanner.nextInt();
                                             scanner.nextLine(); // Consumir la nueva línea pendiente
                                             if (sendMessageChoice == 1) {
-                                                System.out.print("Mensage: ");
+                                                System.out.print("Message: ");
                                                 String chatMessage = scanner.nextLine();
-                                                xmppClient.sendMessage(selectedContact, chatMessage);
+                                                xmppClient.sendMessage(selectedContact, chatMessage, null);
                                                 System.out.println("Message sent ✓");
                                             }
                                         } else {
@@ -128,70 +182,63 @@ public class XMPPMain {
                                         }
                                     }
                                     break;
-                                case 5:
-                                    boolean running = true;
+                                case 6:
+                                    contacts = xmppClient.getContacts();
+                                    // Send a file
+                                    if (contacts.isEmpty()) {
+                                        System.out.println("You don't have any contacts in your list.");
+                                    } else {
+                                        System.out.println("\n===================================================");
+                                        System.out.println("List of contacts:");
+                                        for (int i = 0; i < contacts.size(); i++) {
+                                            System.out.println((i + 1) + ". " + contacts.get(i));
+                                        }
+                                        System.out.println("===================================================\n");
+                                        System.out.print("Select the contact's number to whom you want to send a file: ");
+                                        int selectedContactIndex = scanner.nextInt();
+                                        scanner.nextLine();
+                                        if (selectedContactIndex >= 1 && selectedContactIndex <= contacts.size()) {
+                                            String selectedContact = contacts.get(selectedContactIndex - 1);
 
-                                    while (running) {
-                                        System.out.println("\n1. Chats");
-                                        System.out.println("2. Send Messages");
-                                        System.out.println("3. Exit");
-                                        System.out.print("Select an option: ");
-                                        int choiceContacts = scanner.nextInt();
-
-                                        switch (choiceContacts) {
-                                            case 1:
-                                                contacts = xmppClient.getContacts();
-
-                                                if (contacts.isEmpty()) {
-                                                    System.out.println("You don't have any contacts in your list.");
-                                                } else {
-                                                    System.out.println("\n===================================================");
-                                                    System.out.println("List of contacts:");
-                                                    for (int i = 0; i < contacts.size(); i++) {
-                                                        System.out.println((i + 1) + ". " + contacts.get(i));
-                                                    }
-                                                    System.out.println("===================================================\n");
-                                                    System.out.print("Select the contact's number to whom you want to see the history: ");
-                                                    int selectedContactIndex = scanner.nextInt();
-                                                    scanner.nextLine();
-                                                    if (selectedContactIndex >= 1 && selectedContactIndex <= contacts.size()) {
-                                                        String selectedContact = contacts.get(selectedContactIndex - 1);
-                                                        List<String> chatHistory = xmppClient.getChatHistory(selectedContact);
-
-                                                        System.out.println("\nChat history with " + selectedContact + ":");
-                                                        for (String me : chatHistory) {
-                                                            System.out.println(me);
-                                                        }
-                                                    } else {
-                                                        System.out.println("Invalid option.");
-                                                    }
-                                                }
-                                                break;
-                                            case 2:
-                                                scanner.nextLine(); // Consume la nueva línea pendiente
-                                                System.out.print("Ingresa el JID del contacto: ");
-                                                String recipientJID = scanner.nextLine();
-                                                System.out.print("Mensaje: ");
-                                                String chatMessage = scanner.nextLine();
-                                                xmppClient.sendMessage(recipientJID, chatMessage);
-                                                System.out.println("Mensaje enviado.");
-                                                break;
-                                            case 3:
-                                                running = false;
-                                                break;
-                                            default:
-                                                System.out.println("Opción inválida.");
-                                                break;
+                                            System.out.print("File path: ");
+                                            String filePath = scanner.nextLine();
+                                            xmppClient.sendFile(selectedContact, filePath);
+                                            System.out.println("File sent ✓");
+                                        } else {
+                                            System.out.println("Invalid option.");
                                         }
                                     }
-                                case 10:
+                                    break;
+                                case 7:
+
+                                    System.out.println("Group chat");
+                                    break;
+                                case 8:
+                                    System.out.println("Are you sure you want to delete your account?");
+                                    System.out.println("Press 1 to confirm or 0 to cancel:");
+                                    int confirmDelete = scanner.nextInt();
+
+                                    if (confirmDelete == 1) {
+                                        boolean deleted = xmppClient.deleteAccount();
+                                        if (deleted) {
+                                            System.out.println("Account deleted successfully.");
+                                            xmppClient.disconnect();
+                                            lgchoice = 10;
+                                        } else {
+                                            System.out.println("Failed to delete account.");
+                                        }
+                                    } else {
+                                        System.out.println("Account deletion cancelled.");
+                                    }
+                                    break;
+                                case 9:
                                     messageHistory = xmppClient.getMessageHistory();
                                     xmppClient.disconnect();
                                     break;
                                 default:
                                     System.out.println("Invalid option.");
                             }
-                        } while (lgchoice != 10);
+                        } while (lgchoice != 9);
                     };
                     break;
                 case 2:
